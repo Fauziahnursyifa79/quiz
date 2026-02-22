@@ -12,10 +12,28 @@ use Illuminate\Support\Facades\DB;
 
 class User_answerController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Mengambil data dengan Eager Loading agar tidak berat saat loading halaman
+        // Mengambil data dengan Eager Loading
         $answers = User_answer::with(['result.user', 'result.quiz', 'question'])
+            ->when($request->search, function($query) use ($request) {
+                $searchTerm = '%' . $request->search . '%';
+
+                $query->where(function($q) use ($searchTerm) {
+                    // Cari berdasarkan nama user (melalui relasi result -> user)
+                    $q->whereHas('result.user', function($userQuery) use ($searchTerm) {
+                        $userQuery->where('name', 'like', $searchTerm);
+                    })
+                    // ATAU cari berdasarkan judul quiz (melalui relasi result -> quiz)
+                    ->orWhereHas('result.quiz', function($quizQuery) use ($searchTerm) {
+                        $quizQuery->where('title', 'like', $searchTerm);
+                    })
+                    // ATAU cari berdasarkan teks soal (Perbaikan: kolom 'question' sesuai migrasi)
+                    ->orWhereHas('question', function($questionQuery) use ($searchTerm) {
+                        $questionQuery->where('question', 'like', $searchTerm);
+                    });
+                });
+            })
             ->latest()
             ->get();
 
@@ -30,7 +48,6 @@ class User_answerController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi login
         if (!Auth::check()) {
             return redirect()->route('login');
         }
@@ -43,7 +60,6 @@ class User_answerController extends Controller
         $question = Questions::findOrFail($request->question_id);
 
         return DB::transaction(function () use ($request, $question) {
-            // 1. Ambil atau buat data Result (Induk)
             $result = Results::firstOrCreate(
                 [
                     'user_id' => Auth::id(),
@@ -57,10 +73,8 @@ class User_answerController extends Controller
                 ]
             );
 
-            // 2. Cek apakah jawaban user benar
             $is_correct = (strtolower($request->selected_answer) === strtolower($question->correct_answer));
 
-            // 3. SIMPAN/UPDATE ke tabel user_answers (Agar muncul di list Admin)
             User_answer::updateOrCreate(
                 [
                     'result_id'   => $result->id,
@@ -72,19 +86,18 @@ class User_answerController extends Controller
                 ]
             );
 
-            // 4. Hitung ulang Score di tabel results agar data sinkron
+            // Hitung ulang Score
             $answers = User_answer::where('result_id', $result->id)->get();
             $correctCount = $answers->where('is_correct', true)->count();
             $totalQuestionsInQuiz = Questions::where('quiz_id', $question->quiz_id)->count();
 
-            // Perhitungan skor (misal: benar / total soal * 100)
             $score = ($totalQuestionsInQuiz > 0) ? ($correctCount / $totalQuestionsInQuiz) * 100 : 0;
 
             $result->update([
                 'score'           => $score,
                 'total_questions' => $totalQuestionsInQuiz,
                 'correct_answers' => $correctCount,
-                'is_passed'       => $score >= 70, // Standar lulus 70
+                'is_passed'       => $score >= 70,
             ]);
 
             return redirect()->back()->with('success', 'Jawaban berhasil disimpan!');

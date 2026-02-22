@@ -17,11 +17,7 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
+   
 
     <div class="main-content">
         <div class="card">
@@ -97,7 +93,7 @@
 
                                             <li>
                                                 <a class="dropdown-item"
-                                                   href="{{ route('materi.edit', $materi->id) }}">
+                                                   href="{{ route('admin.materis.edit', $materi->id) }}">
                                                     Edit
                                                 </a>
                                             </li>

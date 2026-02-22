@@ -12,10 +12,25 @@ class QuestionsController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua soal beserta relasi quiz, urut terbaru
-        $questions = Questions::with('quiz')->latest('created_at')->get();
+        // Ambil data soal dengan relasi quiz
+        $questions = Questions::with('quiz')
+            ->when($request->search, function($query) use ($request) {
+                $searchTerm = '%' . $request->search . '%';
+
+                $query->where(function($q) use ($searchTerm) {
+                    // 1. Perbaikan: 'question' sesuai migration (tanpa s)
+                    $q->where('question', 'like', $searchTerm)
+                    // 2. Perbaikan: 'quiz' adalah nama fungsi relasi di Model
+                      ->orWhereHas('quiz', function($quizQuery) use ($searchTerm) {
+                          $quizQuery->where('title', 'like', $searchTerm);
+                      });
+                });
+            })
+            ->latest('created_at')
+            ->get();
+
         return view('admin.questions.index', compact('questions'));
     }
 
@@ -41,19 +56,10 @@ class QuestionsController extends Controller
             'option_c' => 'required|string',
             'option_d' => 'required|string',
             'correct_answer' => 'required|in:a,b,c,d',
-            'score' => 'required|numeric|min:1', // validasi score
+            'score' => 'required|numeric|min:1',
         ]);
 
-        Questions::create([
-            'quiz_id' => $request->quiz_id,
-            'question' => $request->question,
-            'option_a' => $request->option_a,
-            'option_b' => $request->option_b,
-            'option_c' => $request->option_c,
-            'option_d' => $request->option_d,
-            'correct_answer' => $request->correct_answer,
-            'score' => $request->score, // simpan score
-        ]);
+        Questions::create($request->all());
 
         return redirect()->route('questions.index')
                          ->with('success', 'Soal berhasil ditambahkan');
@@ -92,21 +98,11 @@ class QuestionsController extends Controller
             'option_c' => 'required|string',
             'option_d' => 'required|string',
             'correct_answer' => 'required|in:a,b,c,d',
-            'score' => 'required|numeric|min:1', // validasi score
+            'score' => 'required|numeric|min:1',
         ]);
 
         $question = Questions::findOrFail($id);
-
-        $question->update([
-            'quiz_id' => $request->quiz_id,
-            'question' => $request->question,
-            'option_a' => $request->option_a,
-            'option_b' => $request->option_b,
-            'option_c' => $request->option_c,
-            'option_d' => $request->option_d,
-            'correct_answer' => $request->correct_answer,
-            'score' => $request->score, // update score
-        ]);
+        $question->update($request->all());
 
         return redirect()->route('questions.index')
                          ->with('success', 'Soal berhasil diupdate');

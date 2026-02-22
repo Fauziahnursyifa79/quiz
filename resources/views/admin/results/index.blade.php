@@ -10,18 +10,7 @@
                 <h5 class="m-b-10">Hasil Quiz</h5>
             </div>
         </div>
-        <div class="page-header-right ms-auto">
-            <a href="{{ route('results.create') }}" class="btn btn-primary">
-                <i class="feather-plus me-2"></i>Tambah Hasil
-            </a>
-        </div>
     </div>
-
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
 
     <div class="main-content">
         <div class="card">

@@ -9,9 +9,16 @@ use App\Models\Materi;
 
 class QuizController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $quizzes = Quiz::with('materi')->latest()->get();
+        // Fitur search untuk mencari berdasarkan judul quiz
+        $quizzes = Quiz::with('materi')
+            ->when($request->search, function($query, $search) {
+                $query->where('title', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->get();
+
         return view('admin.quiz.index', compact('quizzes'));
     }
 
@@ -32,14 +39,7 @@ class QuizController extends Controller
             'is_active'     => 'required|boolean',
         ]);
 
-        Quiz::create([
-            'materi_id'     => $request->materi_id,
-            'title'         => $request->title,
-            'description'   => $request->description,
-            'time_limit'    => $request->time_limit,
-            'passing_score' => $request->passing_score ?? 0,
-            'is_active'     => $request->is_active,
-        ]);
+        Quiz::create($request->all());
 
         return redirect()->route('quiz.index')
             ->with('success', 'Quiz berhasil ditambahkan!');
@@ -70,15 +70,7 @@ class QuizController extends Controller
         ]);
 
         $quiz = Quiz::findOrFail($id);
-
-        $quiz->update([
-            'materi_id'     => $request->materi_id,
-            'title'         => $request->title,
-            'description'   => $request->description,
-            'time_limit'    => $request->time_limit,
-            'passing_score' => $request->passing_score ?? 0,
-            'is_active'     => $request->is_active,
-        ]);
+        $quiz->update($request->all());
 
         return redirect()->route('quiz.index')
             ->with('success', 'Quiz berhasil diupdate!');

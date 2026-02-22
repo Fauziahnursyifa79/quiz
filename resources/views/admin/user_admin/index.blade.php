@@ -10,12 +10,6 @@
                 <h5 class="m-b-10">Data Jawaban User</h5>
             </div>
         </div>
-
-        <div class="page-header-right ms-auto">
-            <a href="{{ route('user-answers.create') }}" class="btn btn-primary">
-                <i class="feather-plus me-2"></i>Tambah Jawaban
-            </a>
-        </div>
     </div>
 
     @if(session('success'))

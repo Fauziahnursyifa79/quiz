@@ -8,12 +8,19 @@ use Illuminate\Http\Request;
 
 class MateriController extends Controller
 {
-    public function index()
+    // Tambahkan Request $request di dalam kurung
+    public function index(Request $request)
     {
-        $materis = Materi::latest()->get();
+        $materis = Materi::query()
+            // Jika ada input 'search', maka jalankan query pencarian
+            ->when($request->search, function($query) use ($request) {
+                $query->where('title', 'like', '%' . $request->search . '%');
+            })
+            ->latest()
+            ->get();
+
         return view('admin.materi.index', compact('materis'));
     }
-
     public function create()
     {
         return view('admin.materi.create');

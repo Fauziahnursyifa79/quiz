@@ -13,10 +13,27 @@ class ResultsController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Menampilkan semua hasil (admin bisa lihat semua)
-        $results = Results::with(['user', 'quiz'])->latest()->get();
+        // Menampilkan semua hasil dengan relasi user dan quiz
+        $results = Results::with(['user', 'quiz'])
+            ->when($request->search, function($query) use ($request) {
+                $searchTerm = '%' . $request->search . '%';
+
+                $query->where(function($q) use ($searchTerm) {
+                    // Perbaikan: gunakan nama relasi 'user', bukan 'user_id'
+                    $q->whereHas('user', function($userQuery) use ($searchTerm) {
+                        $userQuery->where('name', 'like', $searchTerm);
+                    })
+                    // Perbaikan: gunakan nama relasi 'quiz', bukan 'quiz_id'
+                    ->orWhereHas('quiz', function($quizQuery) use ($searchTerm) {
+                        $quizQuery->where('title', 'like', $searchTerm);
+                    });
+                });
+            })
+            ->latest()
+            ->get();
+
         return view('admin.results.index', compact('results'));
     }
 
@@ -25,10 +42,7 @@ class ResultsController extends Controller
      */
     public function create()
     {
-        // Ambil semua quiz
         $quizzes = Quiz::all();
-
-        // User yang login akan otomatis disimpan di store
         return view('admin.results.create', compact('quizzes'));
     }
 
@@ -46,7 +60,7 @@ class ResultsController extends Controller
         ]);
 
         Results::create([
-            'user_id'          => Auth::id(), // Ambil user yang login
+            'user_id'          => Auth::id(),
             'quiz_id'          => $request->quiz_id,
             'score'            => $request->score,
             'total_questions'  => $request->total_questions,
@@ -94,7 +108,6 @@ class ResultsController extends Controller
         $result = Results::findOrFail($id);
 
         $result->update([
-            'user_id'          => Auth::id(), // tetap dari user login
             'quiz_id'          => $request->quiz_id,
             'score'            => $request->score,
             'total_questions'  => $request->total_questions,
