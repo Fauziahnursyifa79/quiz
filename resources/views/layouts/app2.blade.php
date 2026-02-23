@@ -57,7 +57,7 @@
                     <div class="mb-4">
                         <input id="email" type="email"
                             class="form-control @error('email') is-invalid @enderror"
-                            name="email" value="{{ old('email') }}" required autofocus>
+                            name="email" value="{{ old('email') }}" required autofocus placeholder="Email">
                         @error('email')
                             <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
                         @enderror
@@ -66,7 +66,7 @@
                     <div class="mb-3">
                         <input id="password" type="password"
                             class="form-control @error('password') is-invalid @enderror"
-                            name="password" required>
+                            name="password" required placeholder="Password">
                         @error('password')
                             <span class="invalid-feedback"><strong>{{ $message }}</strong></span>
                         @enderror
