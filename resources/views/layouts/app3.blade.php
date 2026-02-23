@@ -63,13 +63,12 @@
                         <a href="{{ route('quizs.index') }}" class="nxl-link">
                             <span class="nxl-micon"><i class="feather-send"></i></span>
                             <span class="nxl-mtext">Daftar Quiz</span>
-                            <span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
                         </a>
                     </li>
                     <li class="nxl-item nxl-hasmenu">
                         <a href="javascript:void(0);" class="nxl-link">
                             <span class="nxl-micon"><i class="feather-dollar-sign"></i></span>
-                            <span class="nxl-mtext">Hasil</span><span class="nxl-arrow"><i class="feather-chevron-right"></i></span>
+                            <span class="nxl-mtext">Hasil</span><span class="nxl-arrow"></span>
                         </a>
                         <ul class="nxl-submenu">
                             <li class="nxl-item"><a class="nxl-link" href="{{route('result.index')}}">Semua Hasil</a></li>

@@ -18,7 +18,7 @@ class QuizController extends Controller
         $quizzes = Quiz::with('materi')->where('is_active', 1)->latest()->get();
 
         // Pastikan folder view-nya adalah view/quiz/index.blade.php
-        return view('view.quiz.index', compact('quizzes'));
+        return view('view.Quiz.index', compact('quizzes'));
     }
 
     /**
@@ -32,6 +32,6 @@ class QuizController extends Controller
 
         // Arahkan ke blade pengerjaan soal
         // Kita gunakan folder view/Questions/show sesuai keinginanmu sebelumnya
-        return view('view.quiz.show', compact('quiz'));
+        return view('view.Quiz.show', compact('quiz'));
     }
 }
