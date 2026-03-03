@@ -37,13 +37,13 @@
 
                         <div class="mb-4">
                             <h2 class="fw-bold custom-brand-text mb-1">{{ $materi->title }}</h2>
-                              <p class="text-muted small mt-2">Diterbitkan pada: {{ $materi->created_at->format('d M Y') }}</p>
-
-                            <p class="text-muted small">Materi Bagian: <span id="currentPageNum">1</span></p>
+                            <p class="text-muted small mt-2">Diterbitkan pada: {{ $materi->created_at->format('d M Y') }}</p>
+                            <p class="text-muted small">Halaman: <span id="currentPageNum">1</span> dari <span id="totalPageNumText">...</span></p>
                         </div>
 
-                       <hr class="my-4">
+                        <hr class="my-4">
 
+                        {{-- Menampilkan Thumbnail jika ada --}}
                         @if($materi->thumbnail)
                         <div class="mb-4">
                             <img src="{{ asset('storage/' . $materi->thumbnail) }}"
@@ -52,9 +52,10 @@
                                  style="max-height: 250px; max-width: 100%; object-fit: contain;">
                         </div>
                         @endif
+
                         {{-- Bagian Konten yang akan dipisah --}}
                         <div id="pagedMateriContainer" class="content-area text-start mx-auto" style="font-size: 1.1rem; line-height: 1.8; color: #334155; max-width: 850px;">
-                            {{-- Konten asli dari database ditaruh di sini dulu --}}
+                            {{-- Konten asli dari database ditaruh di sini (Hidden) --}}
                             <div id="rawContent" style="display:none;">{!! $materi->content !!}</div>
                             <div id="pagesWrapper"></div>
                         </div>
@@ -67,6 +68,7 @@
                                 <button id="materiPrevBtn" class="btn btn-outline-primary shadow-sm px-4" onclick="changeMateriPage(-1)" style="display:none;">
                                     <i class="bi bi-chevron-left me-1"></i> Sebelumnya
                                 </button>
+
                                 <div id="spacer" style="flex-grow: 1;"></div>
 
                                 {{-- Tombol Selanjutnya --}}
@@ -84,7 +86,7 @@
                                             <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
                                         </a>
                                         <button class="btn btn-primary" onclick="window.print()">
-                                            <i class="bi bi-printer me-1"></i> Cetak
+                                            <i class="bi bi-printer me-1"></i> Cetak Materi
                                         </button>
                                     </div>
                                 </div>
@@ -104,33 +106,38 @@
     let totalMateriPages = 0;
 
     document.addEventListener("DOMContentLoaded", function() {
-        const rawHtml = document.getElementById('rawContent').innerHTML;
+        const rawContentDiv = document.getElementById('rawContent');
         const pagesWrapper = document.getElementById('pagesWrapper');
+        const rawHtml = rawContentDiv.innerHTML;
 
-        // --- LOGIKA PEMISAHAN KONTEN ---
-        // Kita membagi konten berdasarkan tag <p> atau <div> agar tidak memotong kalimat di tengah
+        // Gunakan elemen sementara untuk memparsing HTML
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = rawHtml;
         const elements = Array.from(tempDiv.children);
 
+        // Jika konten kosong atau tidak ada tag pembungkus
         if (elements.length === 0) {
-            // Jika konten tidak punya tag (hanya teks biasa)
             pagesWrapper.innerHTML = `<div class="page-content active">${rawHtml}</div>`;
-            document.getElementById('materiFinishBtn').classList.remove('d-none');
+            totalMateriPages = 1;
+            updateNavigation();
             return;
         }
 
         let currentPageDiv = document.createElement('div');
         currentPageDiv.className = 'page-content';
         let wordCount = 0;
-        const wordsPerPage = 70; // Jarak per halaman (sekitar 150 kata)
+        const wordsPerPage = 70; // Sesuai permintaan: 70 kata
 
         elements.forEach((el, index) => {
-            wordCount += el.innerText.split(/\s+/).length;
+            // Hitung kata dalam elemen ini secara lebih akurat
+            const text = el.innerText || "";
+            const wordsInEl = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+
+            wordCount += wordsInEl;
             currentPageDiv.appendChild(el.cloneNode(true));
 
-            // Jika kata sudah mencapai batas atau ini elemen terakhir
-            if (wordCount >= wordsPerPage || index === elements.length - 1) {
+            // Jika batas kata tercapai (minimal 70 kata) dan ini bukan elemen terakhir
+            if (wordCount >= wordsPerPage && index < elements.length - 1) {
                 pagesWrapper.appendChild(currentPageDiv);
                 currentPageDiv = document.createElement('div');
                 currentPageDiv.className = 'page-content';
@@ -138,23 +145,35 @@
             }
         });
 
+        // Masukkan sisa elemen terakhir
+        pagesWrapper.appendChild(currentPageDiv);
+
         const pages = document.querySelectorAll('.page-content');
         totalMateriPages = pages.length;
-        pages[0].classList.add('active');
+        document.getElementById('totalPageNumText').innerText = totalMateriPages;
+
+        if(totalMateriPages > 0) {
+            pages[0].classList.add('active');
+        }
 
         updateNavigation();
     });
 
     function changeMateriPage(step) {
         const pages = document.querySelectorAll('.page-content');
-        pages[currentMateriPage].classList.remove('active');
 
-        currentMateriPage += step;
-        pages[currentMateriPage].classList.add('active');
+        // Validasi agar tidak out of bounds
+        if (currentMateriPage + step >= 0 && currentMateriPage + step < totalMateriPages) {
+            pages[currentMateriPage].classList.remove('active');
+            currentMateriPage += step;
+            pages[currentMateriPage].classList.add('active');
 
-        document.getElementById('currentPageNum').innerText = currentMateriPage + 1;
-        updateNavigation();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('currentPageNum').innerText = currentMateriPage + 1;
+            updateNavigation();
+
+            // Scroll halus ke atas area konten agar fokus membaca dari awal halaman
+            document.getElementById('pagedMateriContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     function updateNavigation() {
@@ -162,15 +181,14 @@
         const prevBtn = document.getElementById('materiPrevBtn');
         const finishBtn = document.getElementById('materiFinishBtn');
 
-        // Tombol Sebelumnya muncul jika bukan di halaman pertama
+        // Navigasi Tombol Sebelumnya
         prevBtn.style.display = currentMateriPage > 0 ? 'inline-block' : 'none';
 
-        // Tombol Selanjutnya muncul jika bukan di halaman terakhir
+        // Navigasi Tombol Selanjutnya vs Selesai
         if (currentMateriPage < totalMateriPages - 1) {
             nextBtn.style.display = 'inline-block';
             finishBtn.classList.add('d-none');
         } else {
-            // Halaman Terakhir
             nextBtn.style.display = 'none';
             finishBtn.classList.remove('d-none');
         }
