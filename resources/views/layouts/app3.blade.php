@@ -53,7 +53,7 @@
                     </li>
 
                     <li class="nxl-item nxl-hasmenu">
-                        <a href="javascript:void(0);" class="nxl-link">
+                        <a href="{{ route('viewer.materi.index') }}" class="nxl-link">
                             <span class="nxl-micon"><i class="feather-cast"></i></span>
                             <span class="nxl-mtext">Materi</span><span class="nxl-arrow"></i></span>
                         </a>
